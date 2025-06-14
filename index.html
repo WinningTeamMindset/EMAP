@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E.M.A.P. Interactive Assessment for Football</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A single-page dashboard with top navigation to switch between three views: 'Overview', 'Mindset Deep Dive', and 'Self-Assessment Deep Dive'. The Overview uses a radar chart for a high-level summary. The Mindset section uses an interactive accordion for clients to answer qualitative questions. The Self-Assessment section uses interactive sliders and a dropdown for quantitative scoring. A final 'Generate Profile' button collates all inputs into a summary. -->
+    <!-- Visualization & Content Choices: 1. Report Info: 10 self-assessment categories. Goal: Compare multiple dimensions. Viz: Radar Chart (updates based on user scores). Interaction: Sliders update chart. Justification: Provides a live 'profile' view. Library: Chart.js. 2. Report Info: Open-ended questions. Goal: Collect user input. Viz: Accordion with textareas. Interaction: Click to expand/collapse, type to answer. Justification: Organizes input fields cleanly. Method: HTML/JS. 3. Report Info: Scaled questions. Goal: Allow user scoring. Viz: Dynamic Sliders with dropdown. Interaction: Dropdown selects category, sliders set scores. Justification: Provides a clear, interactive scoring mechanism without a redundant chart. Method: HTML/JS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f4f5; /* Warm Neutral: Zinc 100 */
+        }
+        .nav-link {
+            transition: color 0.3s, border-color 0.3s;
+        }
+        .nav-link.active {
+            color: #2563eb; /* Accent: Blue 600 */
+            border-bottom-color: #2563eb;
+        }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 40vh;
+            width: 100%;
+            max-width: 500px;
+            max-height: 500px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 50vh;
+            }
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .accordion-button.open .accordion-arrow {
+            transform: rotate(180deg);
+        }
+        .accordion-arrow {
+            transition: transform 0.3s ease;
+        }
+        .slider-value {
+            min-width: 2.5rem; /* Wider for two digits */
+        }
+        #profileSummary {
+            display: none;
+            scroll-margin-top: 100px;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-gray-900">Elite Mental Aptitude Profile</h1>
+            <p class="mt-2 text-lg text-gray-600">An Interactive Assessment for Footballers</p>
+        </header>
+
+        <nav class="bg-white rounded-lg shadow-sm sticky top-4 z-10 mb-10">
+            <ul class="flex items-center justify-center p-2 space-x-2 sm:space-x-6">
+                <li><a href="#overview" class="nav-link text-gray-600 hover:text-blue-600 font-semibold py-2 px-3 border-b-2 border-transparent">Overview</a></li>
+                <li><a href="#mindset" class="nav-link text-gray-600 hover:text-blue-600 font-semibold py-2 px-3 border-b-2 border-transparent">Mindset Questions</a></li>
+                <li><a href="#self-assessment" class="nav-link text-gray-600 hover:text-blue-600 font-semibold py-2 px-3 border-b-2 border-transparent">Self-Assessment Scoring</a></li>
+                <li><a href="#summary" class="nav-link text-gray-600 hover:text-blue-600 font-semibold py-2 px-3 border-b-2 border-transparent">Profile Summary</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section id="overview" class="mb-16 scroll-mt-24">
+                <div class="bg-white p-8 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4 text-center">Your Profile at a Glance</h2>
+                    <p class="text-center text-gray-600 max-w-3xl mx-auto mb-8">
+                        This radar chart provides a live, holistic view of your self-assessed mental skills. As you complete the self-assessment in the sections below, this chart will update automatically to reflect your scores.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="mindset" class="mb-16 scroll-mt-24">
+                <div class="bg-white p-8 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4 text-center">Mindset Deep Dive</h2>
+                    <p class="text-center text-gray-600 max-w-3xl mx-auto mb-8">
+                        Your mindset is the foundation of peak performance. Please reflect on and answer the following questions. Click on any theme to expand the section and type your responses.
+                    </p>
+                    <div id="questionsAccordion" class="space-y-4">
+                    </div>
+                </div>
+            </section>
+
+            <section id="self-assessment" class="mb-16 scroll-mt-24">
+                <div class="bg-white p-8 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4 text-center">Self-Assessment Scoring</h2>
+                     <p class="text-center text-gray-600 max-w-3xl mx-auto mb-8">
+                        Rate yourself on the following statements using the scale from 0 to 10. Use the dropdown to select a category, then adjust the sliders to input your scores.
+                    </p>
+                    <div class="max-w-md mx-auto mb-8">
+                        <label for="categorySelector" class="block text-sm font-medium text-gray-700 mb-1">Select a Category:</label>
+                        <select id="categorySelector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                    </div>
+                    <div id="slidersContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <!-- Sliders will be dynamically inserted here -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="summary" class="scroll-mt-24">
+                 <div class="text-center mb-8">
+                     <button id="generateProfileBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Generate My Assessment Profile
+                    </button>
+                 </div>
+                 <div id="profileSummary" class="bg-white p-8 rounded-xl shadow-lg">
+                     <h2 class="text-3xl font-bold text-gray-900 mb-6 text-center">Your Completed E.M.A.P.</h2>
+                     <div id="summaryContent" class="space-y-6"></div>
+                 </div>
+            </section>
+        </main>
+        
+        <footer class="text-center mt-12 py-4">
+            <p class="text-gray-500">&copy; 2024 Elite Mental Aptitude Profile Interactive Assessment. All rights reserved.</p>
+        </footer>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const openEndedData = { "Goals & Motivation": ["What are your long-term goals in your sport (within 1-2 years)?", "Rate your level of motivation to achieve your goals (from 1-10)?", "What motivates you to succeed in your sport?"], "Challenges & Limitations": ["What are your biggest mental game challenges?", "What limits you from reaching your goals?", "How might other people in your life hinder or help you?"], "Confidence & Doubt": ["Rate your self-confidence that you can perform well (from 1-10)?", "How sturdy or fragile is your confidence?", "How often do you have 'doubt'?"], "Focus & Composure": ["What's your mindset when in the zone vs. not performing well?", "How often do you lose focus during a game?", "When are you most likely to become distracted?", "When not performing well, do you stay composed?"], "Performance & Expectations": ["Do you perform better in practice than in games?", "What high expectations do you demand of your sport?", "When performing well, do you perform defensively?", "Does fear of failure, anxiety, or tension cause you to not perform freely?", "How often do you perform relaxed, freely, or effortlessly?"], "Dedication & Training": ["Do other activities in your life distract you?", "How dedicated are you to training and improving?", "What else do you want to say about your mental game?"] };
+    const scaledQuestionData = { "Confidence": ["Vs. other players", "Regain after poor game", "Others have confidence in me", "Embrace 'last shot' pressure", "Stays high after mistake"], "Composure": ["Thrives when game is on line", "Forget mistakes easily", "Composed after error", "Perform free under pressure", "Better when pressure is on"], "Concentration": ["Distracted by own thoughts", "Pulled off-task by externals", "Hard to stay on one thought", "Mind wanders to results", "Focus worse on critical plays"], "Commitment": ["Team works well together", "Like feelings of competition", "Training is gratifying", "Best feelings from football", "Sacrifice for dedication"], "Motivation": ["Perfects technique more", "Tense from wanting to win", "Enjoy training over competing", "High expectations for self", "Frustrated by expectations"], "Pregame Routines": ["Have a specific pre-match routine", "Aware when out of routine", "Commit to plan before play", "Routine feels automatic"], "Beliefs & Expectations": ["Use negative self-labels", "Frustrated by high expectations", "Have unrealistic expectations", "Want to meet others' expectations", "View performance as all-or-nothing", "Think 'here I go again'"], "Practice Routines": ["Have set training schedule", "Train with purpose", "Use training to improve", "Practice weaknesses", "Use specific warm-up"], "Social Approval": ["Goal to impress others", "Respect from others is important", "Worry about embarrassment", "Media acknowledgement is satisfying", "Wonder how others judge me"], "Performance Improvement": ["Regularly work with coach", "Work with mental coach", "Improve fitness >3x a week", "Eat well on/off pitch"] };
+    const fullQuestions = { "Confidence": [ "I am confident in my ability and myself more than other players I compete against.", "After a poor game, I can quickly regain my confidence.", "Other people have confidence in me because they know I am talented.", "I embrace the pressure to 'take the last shot' or win the game.", "My confidence remains high even after making a mistake or performing poorly."], "Composure": ["My confidence thrives when the game is mine to win or lose.", "I can easily forget mistakes and move on without dwelling on mistakes.", "I stay composed after I make an error or stupid mistake.", "In pressure situations, I am able to perform free without fear.", "I perform better when the pressure to produce is on."], "Concentration": ["When others talk to me, I get distracted by my own thoughts.", "I get pulled off task when outside distractions are present.", "It's hard for me to stay focused on a single thought or idea.", "My mind wanders to end results and I have trouble focusing on the process.", "I focus worse when I have to make a critical play, pass, or shot in a game."], "Commitment": ["We as a team work well together.", "I like the feelings that come with competition.", "Working hard in training to get better is gratifying.", "I feel the best when involved in football compared to any other activity.", "I sacrifice doing other activities because of my dedication to football."], "Motivation": ["I work on technique more to perfect my skills than other athletes.", "I want to win so badly that I get tense and don't trust myself.", "I enjoy training more so than I enjoy competing.", "I have high expectations for my performance.", "I become frustrated when I do not perform up to my expectations."], "Pregame Routines": ["I have a specific routine I follow before each match.", "I am aware of the moment I get out of my normal pre-match routine.", "I commit to the plan before the play, shot, or run starts.", "My pregame routine feels automatic and effortless to perform."], "Beliefs & Expectations": ["I have called myself a 'loser,' 'choker,' or 'wimp' when I fail or perform poorly.", "My high expectations cause me frustration when I don't perform well.", "I have had unrealistic expectations for my performance.", "I want to live up to the expectations others have for me.", "I view the quality of my performance as good or bad with no middle ground.", "After a costly mistake, I say 'here I go again...messing up again.'"], "Practice Routines": ["I have a set training schedule or routine that I follow every week.", "When I train, I have a specific purpose and goals I accomplish.", "I use training time to improve my fundamentals to perform better in competition.", "I practice my weaknesses as much or more than I practice my strengths.", "I use a specific warm-up routine to prepare for every competition I play."], "Social Approval": ["One of my goals is to impress others with my football skills.", "Gaining the respect and admiration from fellow athletes is important to me.", "I worry about embarrassing myself in front of others who watch me perform.", "Getting acknowledged in the media (social media, TV) for my success is very satisfying.", "I wonder how others judge my performance and think of me."], "Performance Improvement": ["I set a regular schedule to work with a coach on technique or strategy.", "I work with a mental game coach or read sports psychology books.", "I improve my fitness by working out and stretching three times or more per week.", "I eat well and watch my diet on and off the pitch."] };
+
+    const categories = Object.keys(scaledQuestionData);
+    const userScores = {};
+    categories.forEach(cat => { userScores[cat] = Array(scaledQuestionData[cat].length).fill(5); });
+    
+    let radarChart;
+
+    function initRadarChart() {
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        const avgScores = categories.map(cat => userScores[cat].reduce((a, b) => a + b, 0) / userScores[cat].length);
+        const data = { labels: categories, datasets: [{ label: 'Your Average Score', data: avgScores, fill: true, backgroundColor: 'rgba(37, 99, 235, 0.2)', borderColor: 'rgb(37, 99, 235)', pointBackgroundColor: 'rgb(37, 99, 235)', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgb(37, 99, 235)' }] };
+        radarChart = new Chart(ctx, { type: 'radar', data: data, options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: 'rgba(0, 0, 0, 0.1)' }, grid: { color: 'rgba(0, 0, 0, 0.1)' }, pointLabels: { font: { size: 12 } }, suggestedMin: 0, suggestedMax: 10, ticks: { backdropColor: 'transparent', stepSize: 1 } } }, plugins: { legend: { position: 'top' } } } });
+    }
+
+    function updateRadarChart() {
+        radarChart.data.datasets[0].data = categories.map(cat => userScores[cat].reduce((a, b) => a + b, 0) / userScores[cat].length);
+        radarChart.update();
+    }
+
+    function initAccordion() {
+        const accordionContainer = document.getElementById('questionsAccordion');
+        Object.keys(openEndedData).forEach(theme => {
+            const item = document.createElement('div');
+            item.className = 'border border-gray-200 rounded-lg';
+            const button = document.createElement('button');
+            button.className = 'accordion-button w-full flex justify-between items-center text-left p-4 bg-gray-50 hover:bg-gray-100 focus:outline-none';
+            button.innerHTML = `<span class="font-semibold text-lg text-gray-800">${theme}</span><span class="accordion-arrow"><svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></span>`;
+            const content = document.createElement('div');
+            content.className = 'accordion-content';
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'p-5 border-t border-gray-200 space-y-4';
+            openEndedData[theme].forEach((q, index) => {
+                const qId = `${theme.replace(/\s+/g, '-')}-${index}`;
+                contentWrapper.innerHTML += `<div class="question-block"><label for="${qId}" class="block font-medium text-gray-700 mb-2">${q}</label><textarea id="${qId}" data-theme="${theme}" data-question="${q}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" rows="3"></textarea></div>`;
+            });
+            content.appendChild(contentWrapper);
+            item.append(button, content);
+            accordionContainer.appendChild(item);
+            button.addEventListener('click', () => {
+                const isOpen = button.classList.toggle('open');
+                content.style.maxHeight = isOpen ? content.scrollHeight + 'px' : '0px';
+            });
+        });
+    }
+
+    function initInteractiveAssessment() {
+        const selector = document.getElementById('categorySelector');
+        categories.forEach(cat => selector.add(new Option(cat, cat)));
+        selector.addEventListener('change', (e) => renderSliders(e.target.value));
+        renderSliders(categories[0]);
+    }
+
+    function renderSliders(category) {
+        const slidersContainer = document.getElementById('slidersContainer');
+        slidersContainer.innerHTML = '';
+        fullQuestions[category].forEach((q, index) => {
+            const sliderId = `slider-${category}-${index}`;
+            const valueId = `value-${category}-${index}`;
+            const value = userScores[category][index];
+            const sliderHTML = `
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">${q}</label>
+                    <div class="flex items-center space-x-3">
+                        <input id="${sliderId}" type="range" min="0" max="10" value="${value}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" data-category="${category}" data-index="${index}">
+                        <span id="${valueId}" class="slider-value text-center font-semibold text-blue-600 bg-blue-100 rounded-md px-2 py-1">${value}</span>
+                    </div>
+                </div>`;
+            slidersContainer.innerHTML += sliderHTML;
+        });
+        
+        slidersContainer.querySelectorAll('input[type="range"]').forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                const { category, index } = e.target.dataset;
+                const newValue = parseInt(e.target.value, 10);
+                document.getElementById(`value-${category}-${index}`).textContent = newValue;
+                userScores[category][index] = newValue;
+                updateRadarChart();
+            });
+        });
+    }
+
+    function generateProfile() {
+        const summaryContainer = document.getElementById('summaryContent');
+        summaryContainer.innerHTML = '';
+        
+        let mindsetHTML = '<div><h3 class="text-2xl font-bold border-b-2 border-gray-200 pb-2 mb-4">Mindset & Reflections</h3><div class="space-y-4">';
+        document.querySelectorAll('#questionsAccordion textarea').forEach(area => {
+            if (area.value.trim() !== '') {
+                mindsetHTML += `<div class="bg-gray-50 p-3 rounded-lg"><p class="font-semibold text-gray-800">${area.dataset.question}</p><p class="text-gray-600 pl-4 border-l-2 border-gray-300 ml-2 mt-1">${area.value}</p></div>`;
+            }
+        });
+        mindsetHTML += '</div></div>';
+        
+        let scoresHTML = '<div><h3 class="text-2xl font-bold border-b-2 border-gray-200 pb-2 mb-4">Self-Assessment Scores</h3><div class="space-y-4">';
+        categories.forEach(cat => {
+            scoresHTML += `<div class="bg-gray-50 p-3 rounded-lg"><h4 class="font-semibold text-gray-800 text-lg">${cat}</h4><ul class="list-disc list-inside mt-2 text-gray-600">`;
+            fullQuestions[cat].forEach((q, index) => {
+                scoresHTML += `<li>${q}: <span class="font-bold text-blue-600">${userScores[cat][index]}</span></li>`;
+            });
+            scoresHTML += '</ul></div>';
+        });
+        scoresHTML += '</div></div>';
+
+        summaryContainer.innerHTML = mindsetHTML + scoresHTML;
+
+        const summarySection = document.getElementById('profileSummary');
+        summarySection.style.display = 'block';
+        summarySection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function setupNavHighlighting() {
+        const sections = document.querySelectorAll('main section');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => {
+                        const targetId = link.getAttribute('href').substring(1);
+                        const isSummaryLink = targetId === 'summary';
+                        const isTargetSection = targetId === entry.target.id || (isSummaryLink && (entry.target.id === 'summary' || entry.target.id === 'profileSummary'));
+                        link.classList.toggle('active', isTargetSection);
+                    });
+                }
+            });
+        }, { rootMargin: '-40% 0px -60% 0px' });
+        sections.forEach(section => observer.observe(section));
+    }
+
+    initRadarChart();
+    initAccordion();
+    initInteractiveAssessment();
+    setupNavHighlighting();
+    document.getElementById('generateProfileBtn').addEventListener('click', generateProfile);
+});
+</script>
+</body>
+</html>
